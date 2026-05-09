@@ -7,12 +7,7 @@
  *
  * @author  ribadas
  */
-public class Conecta4 {
-    
-    private Jugador _jugador1;    
-    private Jugador _jugador2;
-    private Tablero _tablero;
-    
+public class Conecta4 {    
     /** Creates a new instance of Conecta4 */
     public Conecta4() {
     }
@@ -21,6 +16,14 @@ public class Conecta4 {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
+        Jugador j1 = new Jugador(1);
+        Jugador j2 = new Jugador(2);
+        j1.establecerEstrategia(new EstrategiaAlfaBetha(new EvaluadorPonderado(), 4));
+        j2.establecerEstrategia(new EstrategiaAlfaBetha(new EvaluadorAleatorio(), 4));
+
+        SimuladorPartidas.Resultado r = SimuladorPartidas.simular(j1, j2, 10, true);
+        System.out.println(r);
+
         cargarArgumentos(args);
 
         // Crear jugadores y establecer estrategias
@@ -33,6 +36,10 @@ public class Conecta4 {
         Jugador jugador2 = new Jugador(2);
         jugador2.establecerEstrategia(new EstrategiaMiniMax(new EvaluadorAleatorio(), 4));
         DEBUG("Jugador 2: maquina (minimax con eval. aleatorio + prof. 4)\n");
+        
+        // Jugador 2: jugador alfabetha con evaluador ponderado y prof. busqueda 4
+        jugador2.establecerEstrategia(new EstrategiaAlfaBetha(new EvaluadorPonderado(), 4));
+        DEBUG("Jugador 2: maquina (alphabeta con eval. ponderado + prof. 4)\n");
        
         // Jugar
         Tablero tablero = new Tablero();

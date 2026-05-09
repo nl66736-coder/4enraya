@@ -1,54 +1,68 @@
+/**
+ * SimuladorPartidas: enfrenta dos jugadores en N partidas y devuelve estadísticas.
+ *
+ * Alterna quién empieza en cada partida (la mitad empieza jugador1, la otra mitad jugador2).
+ * Registra victorias/derrotas/empates, tiempo medio de búsqueda y nodos generados.
+ */
 public class SimuladorPartidas {
 
+    /** Resultado de una serie de partidas */
     public static class Resultado {
-        public int  victoriasJ1  = 0;
-        public int  victoriasJ2  = 0;
-        public int  empates      = 0;
-        public int  totalPartidas;
+        public int victoriasJ1 = 0;
+        public int victoriasJ2 = 0;
+        public int empates     = 0;
+        public int totalPartidas;
         public long tiempoTotalMs = 0;
 
-        // Nuevos acumuladores para estadísticas por movimiento
-        public long nodosJ1Total    = 0;
-        public long nodosJ2Total    = 0;
-        public long tiempoJ1TotalMs = 0;
-        public long tiempoJ2TotalMs = 0;
-        public int  movimientosJ1   = 0;
-        public int  movimientosJ2   = 0;
+        public Resultado(int totalPartidas) {
+            this.totalPartidas = totalPartidas;
+        }
 
-        public Resultado(int totalPartidas) { this.totalPartidas = totalPartidas; }
+        public double porcentajeVictoriasJ1() {
+            return 100.0 * victoriasJ1 / totalPartidas;
+        }
 
-        public double porcentajeVictoriasJ1() { return 100.0 * victoriasJ1 / totalPartidas; }
-        public double porcentajeVictoriasJ2() { return 100.0 * victoriasJ2 / totalPartidas; }
-        public double porcentajeEmpates()     { return 100.0 * empates     / totalPartidas; }
-        public double tiempoMedioMsPorPartida(){ return (double) tiempoTotalMs / totalPartidas; }
+        public double porcentajeVictoriasJ2() {
+            return 100.0 * victoriasJ2 / totalPartidas;
+        }
 
-        // Medias por movimiento
-        public double nodosMediaJ1()   { return movimientosJ1 == 0 ? 0 : (double) nodosJ1Total    / movimientosJ1; }
-        public double nodosMediaJ2()   { return movimientosJ2 == 0 ? 0 : (double) nodosJ2Total    / movimientosJ2; }
-        public double tiempoMediaJ1Ms(){ return movimientosJ1 == 0 ? 0 : (double) tiempoJ1TotalMs / movimientosJ1; }
-        public double tiempoMediaJ2Ms(){ return movimientosJ2 == 0 ? 0 : (double) tiempoJ2TotalMs / movimientosJ2; }
+        public double porcentajeEmpates() {
+            return 100.0 * empates / totalPartidas;
+        }
+
+        public double tiempoMedioMsPorPartida() {
+            return (double) tiempoTotalMs / totalPartidas;
+        }
 
         @Override
         public String toString() {
             return String.format(
-                "Partidas: %d | V-J1: %d (%.1f%%) | V-J2: %d (%.1f%%) | Empates: %d (%.1f%%)\n" +
-                "  J1 -> %.1f ms/mov | %.1f nodos/mov\n" +
-                "  J2 -> %.1f ms/mov | %.1f nodos/mov",
+                "Partidas: %d | Victorias J1: %d (%.1f%%) | Victorias J2: %d (%.1f%%) | Empates: %d (%.1f%%) | Tiempo medio: %.1f ms/partida",
                 totalPartidas,
                 victoriasJ1, porcentajeVictoriasJ1(),
                 victoriasJ2, porcentajeVictoriasJ2(),
                 empates,     porcentajeEmpates(),
-                tiempoMediaJ1Ms(), nodosMediaJ1(),
-                tiempoMediaJ2Ms(), nodosMediaJ2()
+                tiempoMedioMsPorPartida()
             );
         }
     }
 
+    /**
+     * Enfrenta jugador1 contra jugador2 en numPartidas partidas.
+     * La mitad de las partidas empieza j1, la otra mitad empieza j2.
+     *
+     * @param jugador1    Jugador con id=1 y su estrategia ya establecida
+     * @param jugador2    Jugador con id=2 y su estrategia ya establecida
+     * @param numPartidas Número total de partidas a simular
+     * @param silencioso  Si true, no imprime estado de cada partida
+     * @return Resultado con estadísticas
+     */
     public static Resultado simular(Jugador jugador1, Jugador jugador2,
                                     int numPartidas, boolean silencioso) {
         Resultado resultado = new Resultado(numPartidas);
 
         for (int partida = 0; partida < numPartidas; partida++) {
+            // Alternar quién empieza
             boolean j1Empieza = (partida % 2 == 0);
 
             Tablero tablero = new Tablero();
@@ -56,26 +70,33 @@ public class SimuladorPartidas {
             tablero.obtenerGanador();
 
             long inicio = System.currentTimeMillis();
-            jugarPartida(jugador1, jugador2, tablero, j1Empieza, resultado);
-            resultado.tiempoTotalMs += System.currentTimeMillis() - inicio;
+            jugarPartida(jugador1, jugador2, tablero, j1Empieza);
+            long fin = System.currentTimeMillis();
 
+            resultado.tiempoTotalMs += (fin - inicio);
+
+            // Registrar ganador
             if (tablero.hayEmpate()) {
                 resultado.empates++;
-                if (!silencioso) System.out.println("Partida " + (partida + 1) + ": EMPATE");
+                if (!silencioso)
+                    System.out.println("Partida " + (partida + 1) + ": EMPATE");
             } else if (tablero.ganaJ1()) {
                 resultado.victoriasJ1++;
-                if (!silencioso) System.out.println("Partida " + (partida + 1) + ": Gana J1");
+                if (!silencioso)
+                    System.out.println("Partida " + (partida + 1) + ": Gana J1");
             } else {
                 resultado.victoriasJ2++;
-                if (!silencioso) System.out.println("Partida " + (partida + 1) + ": Gana J2");
+                if (!silencioso)
+                    System.out.println("Partida " + (partida + 1) + ": Gana J2");
             }
         }
+
         return resultado;
     }
 
+    /** Juega una partida completa entre jugador1 y jugador2 */
     private static void jugarPartida(Jugador jugador1, Jugador jugador2,
-                                      Tablero tablero, boolean j1Empieza,
-                                      Resultado resultado) {
+                                      Tablero tablero, boolean j1Empieza) {
         int turno = j1Empieza ? 1 : 2;
 
         while (!tablero.esFinal()) {
@@ -83,32 +104,17 @@ public class SimuladorPartidas {
 
             int movimiento = jugadorActual.obtenerJugada(tablero);
 
-            // Recoger estadísticas si la estrategia las expone
-            Estrategia est = jugadorActual.getEstrategia();
-            if (est instanceof EstrategiaMiniMax) {
-                EstrategiaMiniMax em = (EstrategiaMiniMax) est;
-                if (turno == 1) {
-                    resultado.nodosJ1Total    += em.getNodosGenerados();
-                    resultado.tiempoJ1TotalMs += em.getTiempoUltimoMs();
-                    resultado.movimientosJ1++;
-                } else {
-                    resultado.nodosJ2Total    += em.getNodosGenerados();
-                    resultado.tiempoJ2TotalMs += em.getTiempoUltimoMs();
-                    resultado.movimientosJ2++;
-                }
-            }
-
             if (movimiento >= 0 && movimiento < Tablero.NCOLUMNAS) {
                 boolean[] posibles = tablero.columnasLibres();
                 if (posibles[movimiento]) {
                     tablero.anadirFicha(movimiento, jugadorActual.getIdentificador());
                     tablero.obtenerGanador();
                 } else {
-                    Conecta4.ERROR_FATAL("Columna completa en simulación.");
+                    Conecta4.ERROR_FATAL("Columna completa en simulación. Abortando.");
                     return;
                 }
             } else {
-                Conecta4.ERROR_FATAL("Movimiento inválido en simulación.");
+                Conecta4.ERROR_FATAL("Movimiento inválido en simulación. Abortando.");
                 return;
             }
 

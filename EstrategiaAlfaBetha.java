@@ -1,4 +1,4 @@
-public class EstrategiaMiniMax extends Estrategia {
+public class EstrategiaAlfaBetha extends EstrategiaMiniMax {
     /* Estrategia que implementa una busqueda MINIMAX
      * 
      * Los parametros de la busqueda (funcion de evaluacion + cota máxima)
@@ -6,24 +6,16 @@ public class EstrategiaMiniMax extends Estrategia {
      * "establecerEvaluador()" y "establecerCapaMaxima()"
      */
      
-    protected Evaluador _evaluador;
-    protected int _capaMaxima;
-
-    protected int _jugadorMAX; // - guarda el identificador del jugador
-                             //   que hace el papel de MAX
-			     // - necesario al hacer las evaluaciones
-			     //   de posiciones finales (ganador, perdedor, empate)
-			     //   en el caso base de la recursividad del MINIMAX 
-   
     /** Creates a new instance of EstrategiaMiniMax */
-    public EstrategiaMiniMax() {
+    public EstrategiaAlfaBetha() {
     }
     
-    public EstrategiaMiniMax(Evaluador evaluador, int capaMaxima) {
-       this.establecerEvaluador(evaluador);  
-       this.establecerCapaMaxima(capaMaxima);
-    }
     
+    public EstrategiaAlfaBetha(Evaluador evaluador, int capaMaxima){
+        super(evaluador, capaMaxima);
+    }
+
+    @Override
     public int buscarMovimiento(Tablero tablero, int jugador) {
         // Implementa primera capa del MINIMAX + seleccion jugada mas prometedora
 	// 
@@ -35,7 +27,7 @@ public class EstrategiaMiniMax extends Estrategia {
         Tablero nuevoTablero;
         int col,valorSucesor;
         int mejorPosicion=-1;  // Movimiento nulo
-        int mejorValor=_evaluador.MINIMO; // Minimo  valor posible 
+        int mejorValor=Evaluador.MINIMO; // Minimo  valor posible 
 
         _jugadorMAX = jugador; // - anota el identificador del jugador que
                                //   tiene el papel de MAX
@@ -48,7 +40,7 @@ public class EstrategiaMiniMax extends Estrategia {
                 nuevoTablero.obtenerGanador();
 
                 // evaluarlo (OJO: cambiar jugador, establecer capa a 1)
-                valorSucesor = MINIMAX(nuevoTablero,Jugador.alternarJugador(jugador),1);                
+                valorSucesor = ALPHABETHA(nuevoTablero,Jugador.alternarJugador(jugador),1, mejorValor, Evaluador.MAXIMO);                
                 nuevoTablero = null; // Ya no se necesita 
                 
                 // tomar mejor valor            
@@ -61,11 +53,7 @@ public class EstrategiaMiniMax extends Estrategia {
         return(mejorPosicion);        
     }
     
-    
-    public int MINIMAX(Tablero tablero, int jugador, int capa) {
-        // Implementa la propagación de valores MINIMAX propiamente dicha
-	// a partir del segundo nivel (capa 1)
-       
+    public int ALPHABETHA(Tablero tablero, int jugador, int capa, int alpha, int betha){
         // Casos base
         if (tablero.hayEmpate()) {
             return(0);
@@ -75,75 +63,67 @@ public class EstrategiaMiniMax extends Estrategia {
 	// -> se usa el identificador del jugador MAX (1 o 2) guardado
 	//    en la llamada a buscarMovimiento()
         if (tablero.esGanador(_jugadorMAX)){ // gana MAX
-            return(_evaluador.MAXIMO);
+            return(Evaluador.MAXIMO);
         }
         if (tablero.esGanador(Jugador.alternarJugador(_jugadorMAX))){ // gana el otro
-            return(_evaluador.MINIMO);
+            return(Evaluador.MINIMO);
         } 
         if (capa == (_capaMaxima)) { // alcanza nivel maximo
             return(_evaluador.valoracion(tablero, _jugadorMAX));
         }
 
-       // Recursividad sobre los sucesores
+        if (esCapaMIN(capa)){
+            return ALPHABETHAMIN(tablero, jugador, capa, alpha, betha);
+        } else {
+            return ALPHABETHAMAX(tablero, jugador, capa, alpha, betha);
+        }
+
+    }
+
+    private int ALPHABETHAMIN(Tablero tablero, int jugador, int capa, int alpha, int betha){
+        int bethaActual = betha;
+        int vActual = Evaluador.MAXIMO;
         boolean movimientosPosibles[] = tablero.columnasLibres();
         Tablero nuevoTablero;
-        int col,valor,valorSucesor;
-        
-        if (esCapaMIN(capa)) {
-           valor = _evaluador.MAXIMO; // valor máximo 
-        }
-        else {
-           valor = _evaluador.MINIMO; // valor mínimo
-        }
-        for (col=0; col<Tablero.NCOLUMNAS; col++) {
+        for (int col=0; col<Tablero.NCOLUMNAS; col++) {
             if (movimientosPosibles[col]) { //se puede añadir ficha en columna
-                // crear nuevo tablero y comprobar ganador
                 nuevoTablero = (Tablero) tablero.clone();
                 nuevoTablero.anadirFicha(col,jugador);
                 nuevoTablero.obtenerGanador();
-                
-                // evaluarlo (OJO: cambiar jugador e incrementar capa)
-                valorSucesor = MINIMAX(nuevoTablero,Jugador.alternarJugador(jugador),(capa+1));
-                nuevoTablero = null; // Ya no se necesita 
-                // tomar minimo o maximo             
-                if (esCapaMIN(capa)) {
-                    valor = minimo2(valor, valorSucesor);
+                int aux = ALPHABETHA(nuevoTablero,Jugador.alternarJugador(jugador),(capa+1),alpha,bethaActual);
+                if (vActual>aux){
+                    vActual=aux;
+                    bethaActual = aux;
                 }
-                else {
-                    valor = maximo2(valor, valorSucesor);
+                if (alpha>=bethaActual){
+                    break;
                 }
             }
         }
-        return(valor);
+        return vActual;
     }
     
-   public void establecerCapaMaxima(int capaMaxima) {
-      _capaMaxima = capaMaxima;
-   }
-   
-   public void establecerEvaluador(Evaluador evaluador) {
-      _evaluador = evaluador;
-   }
-    protected static final boolean esCapaMIN(int capa) {
-        return((capa % 2)==1); // es impar
+    private int ALPHABETHAMAX(Tablero tablero, int jugador, int capa, int alpha, int betha){
+        int alphaActual = alpha;
+        int vActual = -Evaluador.MAXIMO;
+        boolean movimientosPosibles[] = tablero.columnasLibres();
+        Tablero nuevoTablero;
+        for (int col=0; col<Tablero.NCOLUMNAS; col++) {
+            if (movimientosPosibles[col]) { //se puede añadir ficha en columna           
+                nuevoTablero = (Tablero) tablero.clone();
+                nuevoTablero.anadirFicha(col,jugador);
+                nuevoTablero.obtenerGanador();
+                int aux = ALPHABETHA(nuevoTablero,Jugador.alternarJugador(jugador),(capa+1),alphaActual,betha);
+                if (vActual<aux){
+                    vActual=aux;
+                    alphaActual=vActual;
+                }
+                if (betha<=alphaActual){
+                    break;
+                }
+            }
+        }
+        return vActual;
     }
-    
-    protected static final boolean esCapaMAX(int capa) {
-        return((capa % 2)==0); // es par
-    }
-    
-    private static final int maximo2(int v1, int v2) {
-        if (v1 > v2)
-            return(v1);
-        else
-            return(v2);
-    }
-    
-    private static final int minimo2(int v1, int v2) {
-        if (v1 < v2)
-            return(v1);
-        else
-            return(v2);    
-    }
-    
-}  // Fin clase EstartegiaMINIMAX
+
+}  // Fin clase EstartegiaALPHABETHA

@@ -18,9 +18,9 @@ public abstract class Evaluador {
     public static int MAXIMO = 20000;
     public static int MINIMO = -MAXIMO;
     
-    private Tablero _tablero;
-    private int _jugador;
-    private int _valoracion;
+    protected Tablero _tablero;
+    protected int _jugador;
+    protected int _valoracion;
     
     
     /** Creates a new instance of Evaluador */
