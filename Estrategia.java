@@ -10,8 +10,12 @@
  */
 public abstract class Estrategia {
     /* 
-     * Superclase del patron estrategia, el ofrece interfaz comun de todas las
-     * estrategias (funcion buscarMovimiento).
+    /* 
+    /* 
+    /* 
+    /* 
+    * Superclase del patron estrategia, el ofrece interfaz comun de todas las
+    * estrategias (funcion buscarMovimiento).
      */
    
     /** Creates a new instance of Estrategia */
